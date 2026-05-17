@@ -10,11 +10,14 @@ let currentUser = null;   // { id, username, email, role, ... }
 let currentPage = null;
 
 /* ---------- DOM refs ---------- */
-const $header   = document.getElementById('header');
-const $nav      = document.getElementById('nav-main');
-const $userArea = document.getElementById('user-area');
-const $main     = document.getElementById('main');
-const $toast    = document.getElementById('toast');
+const $header     = document.getElementById('header');
+const $nav        = document.getElementById('nav-main');
+const $userArea   = document.getElementById('user-area');
+const $main       = document.getElementById('main');
+const $toast      = document.getElementById('toast');
+const $menuToggle = document.getElementById('menu-toggle');
+const $drawerOverlay = document.getElementById('drawer-overlay');
+const $drawer     = document.getElementById('drawer');
 
 /* ================================================================
    Toast
@@ -95,7 +98,7 @@ function renderHeader() {
 	}
 	$header.style.display = '';
 
-	// nav links
+	// desktop nav links
 	let links = '<a href="#/" class="' + (currentPage === 'dashboard' ? 'active' : '') + '">概览</a>';
 	if (isAdmin()) {
 		links += '<a href="#/admin/users" class="' + (currentPage === 'admin-users' ? 'active' : '') + '">用户管理</a>';
@@ -103,13 +106,50 @@ function renderHeader() {
 	}
 	$nav.innerHTML = links;
 
-	// user area
+	// desktop user area
 	let badgeCls = isAdmin() ? 'admin' : '';
 	$userArea.innerHTML =
 		'<span class="username">' + escHtml(currentUser.username) + '</span>' +
 		'<span class="role-badge ' + badgeCls + '">' + (isAdmin() ? '管理员' : '用户') + '</span>' +
 		'<button class="btn btn-outline btn-sm" onclick="handleLogout()">退出</button>';
+
+	// mobile drawer
+	renderDrawer();
 }
+
+function renderDrawer() {
+	let content = '<div class="drawer-section drawer-user">' +
+		'<div><div class="name">' + escHtml(currentUser.username) + '</div>' +
+		'<span class="role-badge ' + (isAdmin() ? 'admin' : '') + '">' + (isAdmin() ? '管理员' : '用户') + '</span></div>' +
+		'</div>';
+
+	content += '<div class="drawer-section"><div class="drawer-label">导航</div>';
+	content += '<a href="#/" class="' + (currentPage === 'dashboard' ? 'active' : '') + '" onclick="closeDrawer()">概览</a>';
+	if (isAdmin()) {
+		content += '<a href="#/admin/users" class="' + (currentPage === 'admin-users' ? 'active' : '') + '" onclick="closeDrawer()">用户管理</a>';
+		content += '<a href="#/admin/apps" class="' + (currentPage === 'admin-apps' ? 'active' : '') + '" onclick="closeDrawer()">应用管理</a>';
+	}
+	content += '</div>';
+
+	content += '<button class="btn-logout" onclick="handleLogout()">退出登录</button>';
+	$drawer.innerHTML = content;
+}
+
+function openDrawer() {
+	$drawer.classList.add('open');
+	$drawerOverlay.classList.add('open');
+	document.body.style.overflow = 'hidden';
+}
+
+function closeDrawer() {
+	$drawer.classList.remove('open');
+	$drawerOverlay.classList.remove('open');
+	document.body.style.overflow = '';
+}
+
+// Menu toggle
+$menuToggle.addEventListener('click', openDrawer);
+$drawerOverlay.addEventListener('click', closeDrawer);
 
 function handleLogout() {
 	logout(true);
@@ -297,12 +337,12 @@ async function renderDashboard() {
 	const u = currentUser;
 	document.getElementById('dashboard-info').innerHTML = `
 	<table>
-		<tr><th style="width:120px">用户 ID</th><td><code style="font-size:12px">${escHtml(u.id)}</code></td></tr>
-		<tr><th>用户名</th><td>${escHtml(u.username)}</td></tr>
-		<tr><th>邮箱</th><td>${escHtml(u.email || '—')}</td></tr>
-		<tr><th>角色</th><td>${isAdmin() ? '管理员' : '普通用户'}</td></tr>
-		<tr><th>注册时间</th><td>${formatTime(u.created_at)}</td></tr>
-		<tr><th>更新时间</th><td>${formatTime(u.updated_at)}</td></tr>
+		<tr><th>用户 ID</th><td data-label="用户 ID"><code style="font-size:12px">${escHtml(u.id)}</code></td></tr>
+		<tr><th>用户名</th><td data-label="用户名">${escHtml(u.username)}</td></tr>
+		<tr><th>邮箱</th><td data-label="邮箱">${escHtml(u.email || '—')}</td></tr>
+		<tr><th>角色</th><td data-label="角色">${isAdmin() ? '管理员' : '普通用户'}</td></tr>
+		<tr><th>注册时间</th><td data-label="注册时间">${formatTime(u.created_at)}</td></tr>
+		<tr><th>更新时间</th><td data-label="更新时间">${formatTime(u.updated_at)}</td></tr>
 	</table>`;
 }
 
@@ -340,11 +380,11 @@ async function loadUsers(page) {
 		for (const u of items) {
 			const isSelf = u.id === currentUser.id;
 			html += '<tr>' +
-				'<td><strong>' + escHtml(u.username) + '</strong></td>' +
-				'<td>' + escHtml(u.email || '—') + '</td>' +
-				'<td>' + (u.role === 'admin' ? '<span class="role-badge admin">管理员</span>' : '<span class="role-badge">用户</span>') + '</td>' +
-				'<td>' + formatTime(u.created_at) + '</td>' +
-				'<td class="actions">' + renderUserActions(u, isSelf) + '</td>' +
+				'<td data-label="用户名"><strong>' + escHtml(u.username) + '</strong></td>' +
+				'<td data-label="邮箱">' + escHtml(u.email || '—') + '</td>' +
+				'<td data-label="角色">' + (u.role === 'admin' ? '<span class="role-badge admin">管理员</span>' : '<span class="role-badge">用户</span>') + '</td>' +
+				'<td data-label="注册时间">' + formatTime(u.created_at) + '</td>' +
+				'<td data-label="操作" class="actions">' + renderUserActions(u, isSelf) + '</td>' +
 				'</tr>';
 		}
 		html += '</tbody></table></div>';
@@ -436,12 +476,12 @@ async function loadApps(page) {
 			'</tr></thead><tbody>';
 		for (const a of items) {
 			html += '<tr>' +
-				'<td><strong>' + escHtml(a.name) + '</strong></td>' +
-				'<td><span style="color:var(--c-text-sub);font-size:12px">' + escHtml(a.description || '—') + '</span></td>' +
-				'<td><code>' + escHtml(a.client_id) + '</code></td>' +
-				'<td><div class="tag-uris">' + (a.redirect_uris || []).map(u => '<span class="tag-uri" title="' + escHtml(u) + '">' + escHtml(u) + '</span>').join('') + '</div></td>' +
-				'<td>' + formatTime(a.created_at) + '</td>' +
-				'<td class="actions">' +
+				'<td data-label="名称"><strong>' + escHtml(a.name) + '</strong></td>' +
+				'<td data-label="描述"><span style="color:var(--c-text-sub);font-size:12px">' + escHtml(a.description || '—') + '</span></td>' +
+				'<td data-label="Client ID"><code>' + escHtml(a.client_id) + '</code></td>' +
+				'<td data-label="回调地址"><div class="tag-uris">' + (a.redirect_uris || []).map(u => '<span class="tag-uri" title="' + escHtml(u) + '">' + escHtml(u) + '</span>').join('') + '</div></td>' +
+				'<td data-label="创建时间">' + formatTime(a.created_at) + '</td>' +
+				'<td data-label="操作" class="actions">' +
 					'<button class="btn btn-outline btn-sm" onclick="showEditAppModal(\'' + a.id + '\')">编辑</button>' +
 					'<button class="btn btn-outline btn-sm" onclick="showSecretModal(\'' + a.id + '\')">密钥</button>' +
 					'<button class="btn btn-outline btn-sm" onclick="resetSecret(\'' + a.id + '\')">重置密钥</button>' +
@@ -704,7 +744,10 @@ function formatTime(iso) {
 /* ================================================================
    Init
    ================================================================ */
-window.addEventListener('hashchange', doRoute);
+window.addEventListener('hashchange', () => { closeDrawer(); doRoute(); });
+
+// ESC key to close drawer
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
 
 (async function init() {
 	// Try auto-login via session cookie

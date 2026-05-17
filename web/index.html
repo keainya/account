@@ -13,8 +13,18 @@
 			<a class="logo" href="#/">Account</a>
 			<nav id="nav-main"></nav>
 			<div id="user-area"></div>
+			<button class="menu-toggle" id="menu-toggle" aria-label="菜单">
+				<svg width="22" height="18" viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+					<line x1="1" y1="1" x2="21" y2="1"/>
+					<line x1="1" y1="9" x2="21" y2="9"/>
+					<line x1="1" y1="17" x2="21" y2="17"/>
+				</svg>
+			</button>
 		</div>
 	</header>
+	<!-- 手机端侧滑菜单 -->
+	<div class="drawer-overlay" id="drawer-overlay"></div>
+	<nav class="drawer" id="drawer"></nav>
 
 	<!-- Toast 提示 -->
 	<div id="toast" class="toast"></div>
