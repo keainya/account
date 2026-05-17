@@ -86,13 +86,13 @@ func InitRouter() *gin.Engine {
 
 	// ========== 前端静态文件 & SPA fallback ==========
 	// 注意：必须在所有 API 路由之后，避免路由冲突
-	r.StaticFS("/css", http.Dir("../web/css"))
-	r.StaticFS("/js", http.Dir("../web/js"))
-	r.StaticFile("/favicon.ico", "../web/favicon.ico")
+	r.StaticFS("/css", http.Dir("./web/css"))
+	r.StaticFS("/js", http.Dir("./web/js"))
+	r.StaticFile("/favicon.ico", "./web/favicon.ico")
 
 	// SPA fallback：未匹配的任何路径都返回 index.html
 	r.NoRoute(func(c *gin.Context) {
-		c.File("../web/index.html")
+		c.File("./web/index.html")
 	})
 
 	return r
