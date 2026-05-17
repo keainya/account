@@ -3,7 +3,7 @@
    ================================================================ */
 
 /* ---------- Config ---------- */
-const API_BASE = 'http://localhost:8080';
+const API_BASE = '';  // 同源，无需写完整 URL
 
 /* ---------- State ---------- */
 let currentUser = null;   // { id, username, email, role, ... }
