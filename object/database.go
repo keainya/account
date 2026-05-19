@@ -24,6 +24,7 @@ func init() {
 		&UserMetadata{},
 		&OAuthCode{},
 		&RefreshToken{},
+		&SystemConfig{},
 	)
 	if err != nil {
 		panic(err)

@@ -353,12 +353,44 @@ async function renderAdminUsers() {
 	$main.className = '';
 	$main.innerHTML = `
 	<div class="card">
-		<div class="card-header"><h2>用户管理</h2></div>
+		<div class="card-header">
+			<h2>用户管理</h2>
+			<div class="switch-wrap">
+				<span class="switch-label">允许新用户注册</span>
+				<label class="toggle-switch">
+					<input type="checkbox" id="reg-toggle" onchange="toggleRegistration()">
+					<span class="toggle-slider"></span>
+				</label>
+			</div>
+		</div>
 		<div id="admin-users-table"></div>
 		<div id="admin-users-pager"></div>
 	</div>`;
+	await loadRegistrationSetting();
 	await loadUsers(1);
 }
+
+async function loadRegistrationSetting() {
+	try {
+		const d = await apiGet('/api/admin/settings/registration');
+		document.getElementById('reg-toggle').checked = d.data.registration_enabled;
+	} catch (err) {
+		// 获取失败时保持默认开启状态
+	}
+}
+
+async function toggleRegistration() {
+	const enabled = document.getElementById('reg-toggle').checked;
+	try {
+		await apiPut('/api/admin/settings/registration', { registration_enabled: enabled });
+		showToast(enabled ? '已开启新用户注册' : '已关闭新用户注册', 'success');
+	} catch (err) {
+		showToast(err.msg || '操作失败', 'error');
+		// 恢复开关状态
+		document.getElementById('reg-toggle').checked = !enabled;
+	}
+}
+
 
 async function loadUsers(page) {
 	try {

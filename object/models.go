@@ -48,6 +48,12 @@ type OAuthCode struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+// SystemConfig 系统配置模型
+type SystemConfig struct {
+	Key   string `gorm:"type:text;primaryKey" json:"key"`
+	Value string `gorm:"type:text;not null" json:"value"`
+}
+
 // RefreshToken 刷新令牌模型
 type RefreshToken struct {
 	Token     string    `gorm:"type:text;primaryKey" json:"token"`

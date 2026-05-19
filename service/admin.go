@@ -115,6 +115,55 @@ func AdminDemoteUser(c *gin.Context) {
 	})
 }
 
+// ---------- 系统配置 ----------
+
+// AdminGetRegistrationSetting 获取注册开关状态
+func AdminGetRegistrationSetting(c *gin.Context) {
+	var cfg object.SystemConfig
+	result := object.Database.Where("key = ?", "registration_enabled").First(&cfg)
+	enabled := true // 默认开启
+	if result.Error == nil {
+		enabled = cfg.Value == "true"
+	}
+	c.JSON(200, Response{
+		Code: 0,
+		Msg:  "ok",
+		Data: gin.H{"registration_enabled": enabled},
+	})
+}
+
+// AdminSetRegistrationSetting 设置注册开关状态
+func AdminSetRegistrationSetting(c *gin.Context) {
+	var req struct {
+		Enabled bool `json:"registration_enabled"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(200, Response{Code: 1002, Msg: "参数校验失败"})
+		return
+	}
+
+	value := "false"
+	if req.Enabled {
+		value = "true"
+	}
+
+	var cfg object.SystemConfig
+	result := object.Database.Where("key = ?", "registration_enabled").First(&cfg)
+	if result.Error != nil {
+		// 不存在则创建
+		cfg = object.SystemConfig{Key: "registration_enabled", Value: value}
+		object.Database.Create(&cfg)
+	} else {
+		object.Database.Model(&cfg).Update("value", value)
+	}
+
+	c.JSON(200, Response{
+		Code: 0,
+		Msg:  "ok",
+		Data: gin.H{"registration_enabled": req.Enabled},
+	})
+}
+
 // ---------- 应用管理 ----------
 
 // AdminCreateApp 创建应用

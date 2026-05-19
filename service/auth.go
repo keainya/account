@@ -36,6 +36,20 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	// 检查是否允许新用户注册
+	var totalCount int64
+	object.Database.Model(&object.User{}).Count(&totalCount)
+	if totalCount > 0 {
+		// 非首个用户时，检查注册开关
+		var cfg object.SystemConfig
+		if err := object.Database.Where("key = ?", "registration_enabled").First(&cfg).Error; err == nil {
+			if cfg.Value != "true" {
+				c.JSON(200, Response{Code: 1006, Msg: "管理员已关闭新用户注册"})
+				return
+			}
+		}
+	}
+
 	// 检查用户名唯一性
 	var count int64
 	object.Database.Model(&object.User{}).Where("username = ?", req.Username).Count(&count)

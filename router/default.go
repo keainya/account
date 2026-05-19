@@ -92,6 +92,10 @@ func InitRouter(webEmbed embed.FS) *gin.Engine {
 		admin.PUT("/users/:user_id/promote", service.AdminPromoteUser)
 		admin.PUT("/users/:user_id/demote", service.AdminDemoteUser)
 
+		// 系统设置
+		admin.GET("/settings/registration", service.AdminGetRegistrationSetting)
+		admin.PUT("/settings/registration", service.AdminSetRegistrationSetting)
+
 		// 应用管理
 		admin.POST("/apps", service.AdminCreateApp)
 		admin.GET("/apps", service.AdminListApps)
