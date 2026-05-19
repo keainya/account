@@ -1,6 +1,8 @@
 package router
 
 import (
+	"embed"
+	"io/fs"
 	"net/http"
 	"time"
 
@@ -11,7 +13,12 @@ import (
 	"github.com/keainya/service_temp/service"
 )
 
-func InitRouter() *gin.Engine {
+func InitRouter(webEmbed embed.FS) *gin.Engine {
+	webRoot, err := fs.Sub(webEmbed, "web")
+	if err != nil {
+		panic("embedded web directory not found: " + err.Error())
+	}
+	staticFS := http.FS(webRoot)
 	r := gin.Default()
 
 	// ---- CORS 中间件 ----
@@ -86,13 +93,15 @@ func InitRouter() *gin.Engine {
 
 	// ========== 前端静态文件 & SPA fallback ==========
 	// 注意：必须在所有 API 路由之后，避免路由冲突
-	r.StaticFS("/css", http.Dir("./web/css"))
-	r.StaticFS("/js", http.Dir("./web/js"))
-	r.StaticFile("/favicon.ico", "./web/favicon.ico")
+	r.StaticFS("/css", staticFS)
+	r.StaticFS("/js", staticFS)
+	r.GET("/favicon.ico", func(c *gin.Context) {
+		c.FileFromFS("favicon.ico", staticFS)
+	})
 
 	// SPA fallback：未匹配的任何路径都返回 index.html
 	r.NoRoute(func(c *gin.Context) {
-		c.File("./web/index.html")
+		c.FileFromFS("index.html", staticFS)
 	})
 
 	return r
