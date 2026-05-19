@@ -48,10 +48,10 @@ func OAuthAuthorize(c *gin.Context) {
 	session := sessions.Default(c)
 	userID := session.Get("user_id")
 	if userID == nil {
-		// 未登录，返回简单 JSON（API 模式下），也可以重定向到登录页
-		c.JSON(200, Response{Code: 2001, Msg: "请先登录", Data: gin.H{
-			"authorize_url": c.Request.URL.String(),
-		}})
+		// 未登录，重定向到 OAuth 登录页面
+		// 登录页面完成登录后会重定向回 /oauth/authorize 继续授权流程
+		loginURL := "/oauth/login?" + c.Request.URL.RawQuery
+		c.Redirect(302, loginURL)
 		return
 	}
 
