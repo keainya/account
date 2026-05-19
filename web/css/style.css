@@ -11,8 +11,8 @@
 	--c-text:       #1d2129;
 	--c-text-sub:   #86909c;
 	--c-text-light: #c9cdd4;
-	--c-primary:    #165dff;
-	--c-primary-h:  #0e42d2;
+	--c-primary:    #1d2129;
+	--c-primary-h:  #000000;
 	--c-success:    #00b42a;
 	--c-danger:     #f53f3f;
 	--c-danger-h:   #cb2634;
@@ -57,13 +57,13 @@ a:hover { color: var(--c-primary-h); }
 	font-size: 14px; color: var(--c-text-sub); transition: .15s;
 }
 #nav-main a:hover,
-#nav-main a.active { color: var(--c-primary); background: #e8f0fe; }
+#nav-main a.active { color: var(--c-primary); background: #f0f1f3; }
 
 #user-area { display: flex; align-items: center; gap: 12px; }
 #user-area .username { font-weight: 500; color: var(--c-text); }
 #user-area .role-badge {
 	font-size: 12px; padding: 2px 8px; border-radius: 10px;
-	background: #e8f0fe; color: var(--c-primary);
+	background: #f0f1f3; color: var(--c-primary);
 }
 #user-area .role-badge.admin { background: #ffece8; color: var(--c-danger); }
 #user-area button { font-size: 13px; }
@@ -105,7 +105,7 @@ a:hover { color: var(--c-primary-h); }
 }
 .form-group input:focus,
 .form-group textarea:focus,
-.form-group select:focus { border-color: var(--c-primary); box-shadow: 0 0 0 2px rgba(22,93,255,.15); }
+.form-group select:focus { border-color: var(--c-primary); box-shadow: 0 0 0 2px rgba(0,0,0,.15); }
 .form-group textarea { min-height: 80px; resize: vertical; }
 .form-group .hint { font-size: 12px; color: var(--c-text-sub); margin-top: 4px; }
 .form-group .error { font-size: 12px; color: var(--c-danger); margin-top: 4px; }
@@ -164,7 +164,7 @@ table .actions { display: flex; gap: 8px; align-items: center; }
 .toast.show { opacity: 1; top: 80px; }
 .toast.success { background: #e8ffea; color: var(--c-success); border: 1px solid #b7eb8f; }
 .toast.error { background: #fff1f0; color: var(--c-danger); border: 1px solid #ffa39e; }
-.toast.info { background: #e8f0fe; color: var(--c-primary); border: 1px solid #91caff; }
+.toast.info { background: #f0f1f3; color: var(--c-primary); border: 1px solid #c9cdd4; }
 
 /* ========== Secret Display ========== */
 .secret-display {
@@ -254,7 +254,7 @@ table .actions { display: flex; gap: 8px; align-items: center; }
 	font-size: 15px; color: var(--c-text); transition: .12s; text-decoration: none;
 }
 .drawer a:hover,
-.drawer a.active { color: var(--c-primary); background: #e8f0fe; }
+.drawer a.active { color: var(--c-primary); background: #f0f1f3; }
 
 .drawer .drawer-user {
 	padding: 12px; background: var(--c-bg-alt); border-radius: var(--radius);

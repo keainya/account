@@ -291,10 +291,10 @@ func OAuthLoginPage(c *gin.Context) {
 		.form-group { margin-bottom: 16px; }
 		label { display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500; }
 		input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; transition: border-color .2s; }
-		input:focus { border-color: #4f46e5; }
+		input:focus { border-color: #1d2129; }
 		.btn { width: 100%; padding: 10px; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; margin-top: 8px; }
-		.btn-primary { background: #4f46e5; color: #fff; }
-		.btn-primary:hover { background: #4338ca; }
+		.btn-primary { background: #1d2129; color: #fff; }
+		.btn-primary:hover { background: #000; }
 		.msg { color: #e53e3e; font-size: 13px; margin-top: 8px; display: none; }
 </style>
 </head>
