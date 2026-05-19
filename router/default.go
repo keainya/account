@@ -18,7 +18,17 @@ func InitRouter(webEmbed embed.FS) *gin.Engine {
 	if err != nil {
 		panic("embedded web directory not found: " + err.Error())
 	}
-	staticFS := http.FS(webRoot)
+
+	// 为每个子目录创建子文件系统，匹配 StaticFS 的路径剥离逻辑
+	cssFS, _ := fs.Sub(webRoot, "css")
+	jsFS, _ := fs.Sub(webRoot, "js")
+
+	// 预加载 index.html，用于 SPA fallback
+	indexHTML, err := fs.ReadFile(webRoot, "index.html")
+	if err != nil {
+		panic("embedded index.html not found: " + err.Error())
+	}
+
 	r := gin.Default()
 
 	// ---- CORS 中间件 ----
@@ -93,15 +103,15 @@ func InitRouter(webEmbed embed.FS) *gin.Engine {
 
 	// ========== 前端静态文件 & SPA fallback ==========
 	// 注意：必须在所有 API 路由之后，避免路由冲突
-	r.StaticFS("/css", staticFS)
-	r.StaticFS("/js", staticFS)
+	r.StaticFS("/css", http.FS(cssFS))
+	r.StaticFS("/js", http.FS(jsFS))
 	r.GET("/favicon.ico", func(c *gin.Context) {
-		c.FileFromFS("favicon.ico", staticFS)
+		c.FileFromFS("favicon.ico", http.FS(webRoot))
 	})
 
 	// SPA fallback：未匹配的任何路径都返回 index.html
 	r.NoRoute(func(c *gin.Context) {
-		c.FileFromFS("index.html", staticFS)
+		c.Data(http.StatusOK, "text/html; charset=utf-8", indexHTML)
 	})
 
 	return r
