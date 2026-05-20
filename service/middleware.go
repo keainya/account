@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/keainya/service_temp/object"
-	"github.com/keainya/service_temp/utils"
+	"github.com/keainya/account/object"
+	"github.com/keainya/account/utils"
 )
 
 // AuthRequired Session 登录校验中间件

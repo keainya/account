@@ -4,8 +4,8 @@ import (
 	"embed"
 	"log"
 
-	"github.com/keainya/service_temp/object"
-	"github.com/keainya/service_temp/router"
+	"github.com/keainya/account/object"
+	"github.com/keainya/account/router"
 )
 
 //go:embed web

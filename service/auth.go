@@ -6,8 +6,8 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/keainya/service_temp/object"
-	"github.com/keainya/service_temp/utils"
+	"github.com/keainya/account/object"
+	"github.com/keainya/account/utils"
 )
 
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]{2,31}$`)

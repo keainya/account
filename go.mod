@@ -1,4 +1,4 @@
-module github.com/keainya/service_temp
+module github.com/keainya/account
 
 go 1.25.6
 

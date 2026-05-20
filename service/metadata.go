@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/keainya/service_temp/object"
-	"github.com/keainya/service_temp/utils"
+	"github.com/keainya/account/object"
+	"github.com/keainya/account/utils"
 )
 
 // ---------- Bearer Token 端点 ----------
