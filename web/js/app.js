@@ -519,9 +519,76 @@ async function loadUsers(page) {
 function renderUserActions(u, isSelf) {
 	if (isSelf) return '<span style="color:var(--c-text-sub);font-size:12px">当前用户</span>';
 	if (u.role === 'user') {
-		return '<button class="btn btn-outline btn-sm" onclick="promoteUser(\'' + u.id + '\')">提升为管理员</button>';
+		return '<button class="btn btn-outline btn-sm" onclick="showAdminChangePwdModal(\'' + u.id + '\',\'' + escJs(u.username) + '\')">修改密码</button>' +
+			'<button class="btn btn-outline btn-sm" onclick="promoteUser(\'' + u.id + '\')">提升为管理员</button>';
 	}
 	return '<button class="btn btn-outline btn-sm" onclick="demoteUser(\'' + u.id + '\')">降级</button>';
+}
+
+function showAdminChangePwdModal(userId, username) {
+	const modalId = 'modal-container';
+	let container = document.getElementById(modalId);
+	if (!container) {
+		container = document.createElement('div');
+		container.id = modalId;
+		$main.appendChild(container);
+	}
+
+	container.innerHTML = `
+	<div class="modal-overlay" onclick="if(event.target===this)closeAdminChangePwd()">
+		<div class="modal">
+			<h3>修改用户密码</h3>
+			<p style="margin-bottom:16px;color:var(--c-text-sub);font-size:13px">为 <strong>${escHtml(username)}</strong> 设置新密码</p>
+			<form id="admin-change-pwd-form">
+				<div class="form-group">
+					<label>新密码</label>
+					<input type="password" name="new_password" placeholder="6-128 字符" required minlength="6">
+				</div>
+				<div class="form-group">
+					<label>确认新密码</label>
+					<input type="password" name="confirm_password" placeholder="再次输入新密码" required minlength="6">
+				</div>
+				<div class="modal-actions">
+					<button type="button" class="btn btn-outline" onclick="closeAdminChangePwd()">取消</button>
+					<button type="submit" class="btn btn-primary" id="admin-change-pwd-btn">确认修改</button>
+				</div>
+			</form>
+		</div>
+	</div>`;
+
+	document.getElementById('admin-change-pwd-form').addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const btn = document.getElementById('admin-change-pwd-btn');
+		const fd = new FormData(e.target);
+		const newPwd = fd.get('new_password');
+		const confirmPwd = fd.get('confirm_password');
+
+		if (newPwd !== confirmPwd) {
+			showToast('两次输入的新密码不一致', 'error');
+			return;
+		}
+
+		btn.disabled = true;
+		btn.textContent = '修改中…';
+
+		try {
+			await apiPut('/api/admin/users/' + userId + '/change-password', {
+				new_password: newPwd,
+			});
+			showToast('密码已修改', 'success');
+			closeAdminChangePwd();
+		} catch (err) {
+			showToast(err.msg || '修改失败', 'error');
+		} finally {
+			btn.disabled = false;
+			btn.textContent = '确认修改';
+		}
+	});
+}
+
+function closeAdminChangePwd() {
+	const container = document.getElementById('modal-container');
+	if (container) container.innerHTML = '';
 }
 
 async function promoteUser(userId) {

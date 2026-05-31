@@ -149,6 +149,55 @@ func Logout(c *gin.Context) {
 	c.JSON(200, Response{Code: 0, Msg: "已登出"})
 }
 
+// AdminChangeUserPassword 管理员直接修改用户密码
+func AdminChangeUserPassword(c *gin.Context) {
+	userID := c.Param("user_id")
+	if userID == "" {
+		c.JSON(200, Response{Code: 1002, Msg: "缺少用户 ID"})
+		return
+	}
+
+	// 查找目标用户
+	var targetUser object.User
+	if err := object.Database.Where("id = ?", userID).First(&targetUser).Error; err != nil {
+		c.JSON(200, Response{Code: 1004, Msg: "用户不存在"})
+		return
+	}
+
+	// 不允许修改其他管理员的密码
+	if targetUser.Role == "admin" {
+		c.JSON(200, Response{Code: 2002, Msg: "不能修改其他管理员的密码"})
+		return
+	}
+
+	var req struct {
+		NewPassword string `json:"new_password"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(200, Response{Code: 1002, Msg: "参数校验失败"})
+		return
+	}
+
+	// 校验新密码
+	if len(req.NewPassword) < 6 || len(req.NewPassword) > 128 {
+		c.JSON(200, Response{Code: 1002, Msg: "新密码需 6-128 字符"})
+		return
+	}
+
+	hash, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		c.JSON(200, Response{Code: 9000, Msg: "服务器内部错误"})
+		return
+	}
+
+	if err := object.Database.Model(&targetUser).Update("password_hash", hash).Error; err != nil {
+		c.JSON(200, Response{Code: 9001, Msg: "数据库错误"})
+		return
+	}
+
+	c.JSON(200, Response{Code: 0, Msg: "密码已修改"})
+}
+
 // ChangePassword 修改密码
 func ChangePassword(c *gin.Context) {
 	userVal, exists := c.Get(string(utils.ContextKeyUser))
