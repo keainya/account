@@ -330,7 +330,10 @@ async function renderDashboard() {
 	$main.className = '';
 	$main.innerHTML = `
 	<div class="card">
-		<div class="card-header"><h2>账户信息</h2></div>
+		<div class="card-header">
+			<h2>账户信息</h2>
+			<button class="btn btn-outline btn-sm" onclick="showChangePasswordModal()">修改密码</button>
+		</div>
 		<div id="dashboard-info"></div>
 	</div>`;
 
@@ -344,6 +347,80 @@ async function renderDashboard() {
 		<tr><th>注册时间</th><td data-label="注册时间">${formatTime(u.created_at)}</td></tr>
 		<tr><th>更新时间</th><td data-label="更新时间">${formatTime(u.updated_at)}</td></tr>
 	</table>`;
+}
+
+/* ================================================================
+   Change Password
+   ================================================================ */
+function showChangePasswordModal() {
+	const modalId = 'modal-container';
+	let container = document.getElementById(modalId);
+	if (!container) {
+		container = document.createElement('div');
+		container.id = modalId;
+		$main.appendChild(container);
+	}
+
+	container.innerHTML = `
+	<div class="modal-overlay" onclick="if(event.target===this)closeChangePassword()">
+		<div class="modal">
+			<h3>修改密码</h3>
+			<form id="change-password-form">
+				<div class="form-group">
+					<label>原密码</label>
+					<input type="password" name="old_password" placeholder="请输入当前密码" required>
+				</div>
+				<div class="form-group">
+					<label>新密码</label>
+					<input type="password" name="new_password" placeholder="6-128 字符" required minlength="6">
+				</div>
+				<div class="form-group">
+					<label>确认新密码</label>
+					<input type="password" name="confirm_password" placeholder="再次输入新密码" required minlength="6">
+				</div>
+				<div class="modal-actions">
+					<button type="button" class="btn btn-outline" onclick="closeChangePassword()">取消</button>
+					<button type="submit" class="btn btn-primary" id="change-pwd-btn">确认修改</button>
+				</div>
+			</form>
+		</div>
+	</div>`;
+
+	document.getElementById('change-password-form').addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const btn = document.getElementById('change-pwd-btn');
+		const fd = new FormData(e.target);
+
+		const newPwd = fd.get('new_password');
+		const confirmPwd = fd.get('confirm_password');
+
+		if (newPwd !== confirmPwd) {
+			showToast('两次输入的新密码不一致', 'error');
+			return;
+		}
+
+		btn.disabled = true;
+		btn.textContent = '修改中…';
+
+		try {
+			await apiPost('/api/auth/change-password', {
+				old_password: fd.get('old_password'),
+				new_password: newPwd,
+			});
+			showToast('密码修改成功', 'success');
+			closeChangePassword();
+		} catch (err) {
+			showToast(err.msg || '修改失败', 'error');
+		} finally {
+			btn.disabled = false;
+			btn.textContent = '确认修改';
+		}
+	});
+}
+
+function closeChangePassword() {
+	const container = document.getElementById('modal-container');
+	if (container) container.innerHTML = '';
 }
 
 /* ================================================================

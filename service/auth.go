@@ -149,6 +149,51 @@ func Logout(c *gin.Context) {
 	c.JSON(200, Response{Code: 0, Msg: "已登出"})
 }
 
+// ChangePassword 修改密码
+func ChangePassword(c *gin.Context) {
+	userVal, exists := c.Get(string(utils.ContextKeyUser))
+	if !exists {
+		c.JSON(200, Response{Code: 2001, Msg: "未登录"})
+		return
+	}
+	user := userVal.(object.User)
+
+	var req struct {
+		OldPassword string `json:"old_password"`
+		NewPassword string `json:"new_password"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(200, Response{Code: 1002, Msg: "参数校验失败"})
+		return
+	}
+
+	// 验证旧密码
+	if !utils.CheckPassword(req.OldPassword, user.PasswordHash) {
+		c.JSON(200, Response{Code: 1003, Msg: "原密码错误"})
+		return
+	}
+
+	// 校验新密码
+	if len(req.NewPassword) < 6 || len(req.NewPassword) > 128 {
+		c.JSON(200, Response{Code: 1002, Msg: "新密码需 6-128 字符"})
+		return
+	}
+
+	// 哈希新密码
+	hash, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		c.JSON(200, Response{Code: 9000, Msg: "服务器内部错误"})
+		return
+	}
+
+	if err := object.Database.Model(&user).Update("password_hash", hash).Error; err != nil {
+		c.JSON(200, Response{Code: 9001, Msg: "数据库错误"})
+		return
+	}
+
+	c.JSON(200, Response{Code: 0, Msg: "密码修改成功"})
+}
+
 // Me 获取当前用户信息
 func Me(c *gin.Context) {
 	userVal, exists := c.Get(string(utils.ContextKeyUser))

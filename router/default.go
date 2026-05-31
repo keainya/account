@@ -57,6 +57,7 @@ func InitRouter(webEmbed embed.FS) *gin.Engine {
 		auth.POST("/register", service.Register)
 		auth.POST("/login", service.Login)
 		auth.POST("/logout", service.Logout)
+		auth.POST("/change-password", service.AuthRequired(), service.ChangePassword)
 		auth.GET("/me", service.AuthRequired(), service.Me)
 	}
 
