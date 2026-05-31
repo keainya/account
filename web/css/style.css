@@ -363,6 +363,7 @@ table .actions { display: flex; gap: 8px; align-items: center; }
 		border-radius: 0;
 	}
 	#dashboard-info table tr:last-child { border-bottom: none; }
+	#dashboard-info table th { display: none; }
 	#dashboard-info table td { padding: 10px 0; }
 	#dashboard-info table td::before { width: 64px; }
 
