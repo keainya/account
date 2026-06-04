@@ -3,21 +3,21 @@
    ================================================================ */
 
 /* ---------- Config ---------- */
-const API_BASE = '';  // 同源，无需写完整 URL
+const API_BASE = ""; // 同源，无需写完整 URL
 
 /* ---------- State ---------- */
-let currentUser = null;   // { id, username, email, role, ... }
+let currentUser = null; // { id, username, email, role, ... }
 let currentPage = null;
 
 /* ---------- DOM refs ---------- */
-const $header     = document.getElementById('header');
-const $nav        = document.getElementById('nav-main');
-const $userArea   = document.getElementById('user-area');
-const $main       = document.getElementById('main');
-const $toast      = document.getElementById('toast');
-const $menuToggle = document.getElementById('menu-toggle');
-const $drawerOverlay = document.getElementById('drawer-overlay');
-const $drawer     = document.getElementById('drawer');
+const $header = document.getElementById("header");
+const $nav = document.getElementById("nav-main");
+const $userArea = document.getElementById("user-area");
+const $main = document.getElementById("main");
+const $toast = document.getElementById("toast");
+const $menuToggle = document.getElementById("menu-toggle");
+const $drawerOverlay = document.getElementById("drawer-overlay");
+const $drawer = document.getElementById("drawer");
 
 /* ================================================================
    Toast
@@ -25,11 +25,43 @@ const $drawer     = document.getElementById('drawer');
 let toastTimer = null;
 
 function showToast(msg, type) {
-	type = type || 'info';
+	type = type || "info";
 	$toast.textContent = msg;
-	$toast.className = 'toast ' + type + ' show';
+	$toast.className = "toast " + type + " show";
 	clearTimeout(toastTimer);
-	toastTimer = setTimeout(() => { $toast.classList.remove('show'); }, 2800);
+	toastTimer = setTimeout(() => {
+		$toast.classList.remove("show");
+	}, 2800);
+}
+
+function showConfirm(message, opts) {
+	opts = opts || {};
+	const title = opts.title || "确认操作";
+	const danger = opts.danger || false;
+	return new Promise((resolve) => {
+		let container = document.getElementById("modal-container");
+		if (!container) {
+			container = document.createElement("div");
+			container.id = "modal-container";
+			$main.appendChild(container);
+		}
+		container.innerHTML = `
+		<div class="modal-overlay" onclick="if(event.target===this)window._confirmResolve(false)">
+			<div class="modal" style="max-width:420px">
+				<h3>${escHtml(title)}</h3>
+				<p style="margin-bottom:4px;color:var(--c-text);font-size:14px;line-height:1.6">${escHtml(message)}</p>
+				<div class="modal-actions">
+					<button class="btn btn-outline" onclick="window._confirmResolve(false)">取消</button>
+					<button class="btn ${danger ? "btn-danger" : "btn-primary"}" onclick="window._confirmResolve(true)">确定</button>
+				</div>
+			</div>
+		</div>`;
+		window._confirmResolve = (result) => {
+			container.innerHTML = "";
+			delete window._confirmResolve;
+			resolve(result);
+		};
+	});
 }
 
 /* ================================================================
@@ -39,22 +71,24 @@ async function api(url, opts) {
 	opts = opts || {};
 	const headers = opts.headers || {};
 	if (!(opts.body instanceof FormData)) {
-		headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+		headers["Content-Type"] = headers["Content-Type"] || "application/json";
 	}
 	const res = await fetch(API_BASE + url, {
 		...opts,
 		headers,
-		credentials: 'include',  // carry session cookie
+		credentials: "include", // carry session cookie
 	});
 	let data;
-	try { data = await res.json(); } catch (_) {
-		throw { code: -1, msg: '响应解析失败' };
+	try {
+		data = await res.json();
+	} catch (_) {
+		throw { code: -1, msg: "响应解析失败" };
 	}
 	if (data.code !== 0) {
 		// not logged in -> force to login
-		if (data.code === 2001 && !url.includes('/auth/')) {
+		if (data.code === 2001 && !url.includes("/auth/")) {
 			logout(false);
-			navigate('#/login');
+			navigate("#/login");
 			throw data;
 		}
 		throw data;
@@ -62,17 +96,25 @@ async function api(url, opts) {
 	return data;
 }
 
-function apiGet(url)    { return api(url); }
-function apiPost(url, body) { return api(url, { method: 'POST', body: JSON.stringify(body) }); }
-function apiPut(url, body)  { return api(url, { method: 'PUT',  body: JSON.stringify(body) }); }
-function apiDel(url)        { return api(url, { method: 'DELETE' }); }
+function apiGet(url) {
+	return api(url);
+}
+function apiPost(url, body) {
+	return api(url, { method: "POST", body: JSON.stringify(body) });
+}
+function apiPut(url, body) {
+	return api(url, { method: "PUT", body: JSON.stringify(body) });
+}
+function apiDel(url) {
+	return api(url, { method: "DELETE" });
+}
 
 /* ================================================================
    Auth Helpers
    ================================================================ */
 async function fetchMe() {
 	try {
-		const d = await apiGet('/api/auth/me');
+		const d = await apiGet("/api/auth/me");
 		currentUser = d.data;
 	} catch (_) {
 		currentUser = null;
@@ -82,35 +124,52 @@ async function fetchMe() {
 function logout(doApi) {
 	currentUser = null;
 	if (doApi !== false) {
-		apiPost('/api/auth/logout').catch(() => {});
+		apiPost("/api/auth/logout").catch(() => {});
 	}
 }
 
-function isAdmin() { return currentUser && currentUser.role === 'admin'; }
+function isAdmin() {
+	return currentUser && currentUser.role === "admin";
+}
 
 /* ================================================================
    Render Header
    ================================================================ */
 function renderHeader() {
 	if (!currentUser) {
-		$header.style.display = 'none';
+		$header.style.display = "none";
 		return;
 	}
-	$header.style.display = '';
+	$header.style.display = "";
 
 	// desktop nav links
-	let links = '<a href="#/" class="' + (currentPage === 'dashboard' ? 'active' : '') + '">概览</a>';
+	let links =
+		'<a href="#/" class="' +
+		(currentPage === "dashboard" ? "active" : "") +
+		'">概览</a>';
 	if (isAdmin()) {
-		links += '<a href="#/admin/users" class="' + (currentPage === 'admin-users' ? 'active' : '') + '">用户管理</a>';
-		links += '<a href="#/admin/apps" class="' + (currentPage === 'admin-apps' ? 'active' : '') + '">应用管理</a>';
+		links +=
+			'<a href="#/admin/users" class="' +
+			(currentPage === "admin-users" ? "active" : "") +
+			'">用户管理</a>';
+		links +=
+			'<a href="#/admin/apps" class="' +
+			(currentPage === "admin-apps" ? "active" : "") +
+			'">应用管理</a>';
 	}
 	$nav.innerHTML = links;
 
 	// desktop user area
-	let badgeCls = isAdmin() ? 'admin' : '';
+	let badgeCls = isAdmin() ? "admin" : "";
 	$userArea.innerHTML =
-		'<span class="username">' + escHtml(currentUser.username) + '</span>' +
-		'<span class="role-badge ' + badgeCls + '">' + (isAdmin() ? '管理员' : '用户') + '</span>' +
+		'<span class="username">' +
+		escHtml(currentUser.username) +
+		"</span>" +
+		'<span class="role-badge ' +
+		badgeCls +
+		'">' +
+		(isAdmin() ? "管理员" : "用户") +
+		"</span>" +
 		'<button class="btn btn-outline btn-sm" onclick="handleLogout()">退出</button>';
 
 	// mobile drawer
@@ -118,64 +177,81 @@ function renderHeader() {
 }
 
 function renderDrawer() {
-	let content = '<div class="drawer-section drawer-user">' +
-		'<div><div class="name">' + escHtml(currentUser.username) + '</div>' +
-		'<span class="role-badge ' + (isAdmin() ? 'admin' : '') + '">' + (isAdmin() ? '管理员' : '用户') + '</span></div>' +
-		'</div>';
+	let content =
+		'<div class="drawer-section drawer-user">' +
+		'<div><div class="name">' +
+		escHtml(currentUser.username) +
+		"</div>" +
+		'<span class="role-badge ' +
+		(isAdmin() ? "admin" : "") +
+		'">' +
+		(isAdmin() ? "管理员" : "用户") +
+		"</span></div>" +
+		"</div>";
 
 	content += '<div class="drawer-section"><div class="drawer-label">导航</div>';
-	content += '<a href="#/" class="' + (currentPage === 'dashboard' ? 'active' : '') + '" onclick="closeDrawer()">概览</a>';
+	content +=
+		'<a href="#/" class="' +
+		(currentPage === "dashboard" ? "active" : "") +
+		'" onclick="closeDrawer()">概览</a>';
 	if (isAdmin()) {
-		content += '<a href="#/admin/users" class="' + (currentPage === 'admin-users' ? 'active' : '') + '" onclick="closeDrawer()">用户管理</a>';
-		content += '<a href="#/admin/apps" class="' + (currentPage === 'admin-apps' ? 'active' : '') + '" onclick="closeDrawer()">应用管理</a>';
+		content +=
+			'<a href="#/admin/users" class="' +
+			(currentPage === "admin-users" ? "active" : "") +
+			'" onclick="closeDrawer()">用户管理</a>';
+		content +=
+			'<a href="#/admin/apps" class="' +
+			(currentPage === "admin-apps" ? "active" : "") +
+			'" onclick="closeDrawer()">应用管理</a>';
 	}
-	content += '</div>';
+	content += "</div>";
 
-	content += '<button class="btn-logout" onclick="handleLogout()">退出登录</button>';
+	content +=
+		'<button class="btn-logout" onclick="handleLogout()">退出登录</button>';
 	$drawer.innerHTML = content;
 }
 
 function openDrawer() {
-	$drawer.classList.add('open');
-	$drawerOverlay.classList.add('open');
-	document.body.style.overflow = 'hidden';
+	$drawer.classList.add("open");
+	$drawerOverlay.classList.add("open");
+	document.body.style.overflow = "hidden";
 }
 
 function closeDrawer() {
-	$drawer.classList.remove('open');
-	$drawerOverlay.classList.remove('open');
-	document.body.style.overflow = '';
+	$drawer.classList.remove("open");
+	$drawerOverlay.classList.remove("open");
+	document.body.style.overflow = "";
 }
 
 // Menu toggle
-$menuToggle.addEventListener('click', openDrawer);
-$drawerOverlay.addEventListener('click', closeDrawer);
+$menuToggle.addEventListener("click", openDrawer);
+$drawerOverlay.addEventListener("click", closeDrawer);
 
 function handleLogout() {
 	logout(true);
-	navigate('#/login');
-	showToast('已退出登录', 'info');
+	navigate("#/login");
+	showToast("已退出登录", "info");
 }
 
 /* ================================================================
    Router
    ================================================================ */
 const routes = {
-	'login':        { render: renderLogin,        auth: false },
-	'register':     { render: renderRegister,     auth: false },
-	'dashboard':    { render: renderDashboard,    auth: true  },
-	'admin-users':  { render: renderAdminUsers,   auth: true,  admin: true },
-	'admin-apps':   { render: renderAdminApps,    auth: true,  admin: true },
+	login: { render: renderLogin, auth: false },
+	register: { render: renderRegister, auth: false },
+	dashboard: { render: renderDashboard, auth: true },
+	"admin-users": { render: renderAdminUsers, auth: true, admin: true },
+	"admin-apps": { render: renderAdminApps, auth: true, admin: true },
 };
 
 function parseHash() {
-	const h = location.hash.replace(/^#\/?/, '');
-	if (!h) return 'dashboard';
-	if (h === 'login')      return 'login';
-	if (h === 'register')   return 'register';
-	if (h === 'admin/users') return 'admin-users';
-	if (h === 'admin/apps')  return 'admin-apps';
-	return 'dashboard';
+	const h = location.hash.replace(/^#\/?/, "");
+	if (!h) return "dashboard";
+	if (h === "login") return "login";
+	if (h === "register") return "register";
+	if (h === "admin/users") return "admin-users";
+	if (h === "admin/apps") return "admin-apps";
+	return "dashboard";
 }
 
 async function navigate(hash) {
@@ -185,7 +261,7 @@ async function navigate(hash) {
 
 async function doRoute() {
 	const page = parseHash();
-	const def   = routes[page];
+	const def = routes[page];
 
 	if (!def) {
 		$main.innerHTML = '<div class="empty"><p>页面不存在</p></div>';
@@ -196,7 +272,7 @@ async function doRoute() {
 	if (def.auth && !currentUser) {
 		await fetchMe();
 		if (!currentUser) {
-			location.hash = '#/login';
+			location.hash = "#/login";
 			return doRoute();
 		}
 	}
@@ -216,9 +292,12 @@ async function doRoute() {
    Login Page
    ================================================================ */
 async function renderLogin() {
-	if (currentUser) { navigate('#/'); return; }
+	if (currentUser) {
+		navigate("#/");
+		return;
+	}
 
-	$main.className = 'page-auth';
+	$main.className = "page-auth";
 	$main.innerHTML = `
 	<div class="auth-card">
 		<h1>登录</h1>
@@ -242,36 +321,41 @@ async function renderLogin() {
 		</form>
 	</div>`;
 
-	document.getElementById('login-form').addEventListener('submit', async (e) => {
-		e.preventDefault();
-		const btn = document.getElementById('login-btn');
-		btn.disabled = true;
-		btn.textContent = '登录中…';
-		const fd = new FormData(e.target);
-		try {
-			await apiPost('/api/auth/login', {
-				username: fd.get('username'),
-				password: fd.get('password'),
-			});
-			await fetchMe();
-			showToast('登录成功', 'success');
-			navigate('#/');
-		} catch (err) {
-			showToast(err.msg || '登录失败', 'error');
-		} finally {
-			btn.disabled = false;
-			btn.textContent = '登 录';
-		}
-	});
+	document
+		.getElementById("login-form")
+		.addEventListener("submit", async (e) => {
+			e.preventDefault();
+			const btn = document.getElementById("login-btn");
+			btn.disabled = true;
+			btn.textContent = "登录中…";
+			const fd = new FormData(e.target);
+			try {
+				await apiPost("/api/auth/login", {
+					username: fd.get("username"),
+					password: fd.get("password"),
+				});
+				await fetchMe();
+				showToast("登录成功", "success");
+				navigate("#/");
+			} catch (err) {
+				showToast(err.msg || "登录失败", "error");
+			} finally {
+				btn.disabled = false;
+				btn.textContent = "登 录";
+			}
+		});
 }
 
 /* ================================================================
    Register Page
    ================================================================ */
 async function renderRegister() {
-	if (currentUser) { navigate('#/'); return; }
+	if (currentUser) {
+		navigate("#/");
+		return;
+	}
 
-	$main.className = 'page-auth';
+	$main.className = "page-auth";
 	$main.innerHTML = `
 	<div class="auth-card">
 		<h1>注册</h1>
@@ -300,34 +384,39 @@ async function renderRegister() {
 		</form>
 	</div>`;
 
-	document.getElementById('register-form').addEventListener('submit', async (e) => {
-		e.preventDefault();
-		const btn = document.getElementById('register-btn');
-		btn.disabled = true;
-		btn.textContent = '注册中…';
-		const fd = new FormData(e.target);
-		const body = { username: fd.get('username'), password: fd.get('password') };
-		const email = fd.get('email');
-		if (email) body.email = email;
+	document
+		.getElementById("register-form")
+		.addEventListener("submit", async (e) => {
+			e.preventDefault();
+			const btn = document.getElementById("register-btn");
+			btn.disabled = true;
+			btn.textContent = "注册中…";
+			const fd = new FormData(e.target);
+			const body = {
+				username: fd.get("username"),
+				password: fd.get("password"),
+			};
+			const email = fd.get("email");
+			if (email) body.email = email;
 
-		try {
-			await apiPost('/api/auth/register', body);
-			showToast('注册成功，请登录', 'success');
-			navigate('#/login');
-		} catch (err) {
-			showToast(err.msg || '注册失败', 'error');
-		} finally {
-			btn.disabled = false;
-			btn.textContent = '注 册';
-		}
-	});
+			try {
+				await apiPost("/api/auth/register", body);
+				showToast("注册成功，请登录", "success");
+				navigate("#/login");
+			} catch (err) {
+				showToast(err.msg || "注册失败", "error");
+			} finally {
+				btn.disabled = false;
+				btn.textContent = "注 册";
+			}
+		});
 }
 
 /* ================================================================
    Dashboard Page
    ================================================================ */
 async function renderDashboard() {
-	$main.className = '';
+	$main.className = "";
 	$main.innerHTML = `
 	<div class="card">
 		<div class="card-header">
@@ -338,12 +427,12 @@ async function renderDashboard() {
 	</div>`;
 
 	const u = currentUser;
-	document.getElementById('dashboard-info').innerHTML = `
+	document.getElementById("dashboard-info").innerHTML = `
 	<table>
 		<tr><th>用户 ID</th><td data-label="用户 ID"><code style="font-size:12px">${escHtml(u.id)}</code></td></tr>
 		<tr><th>用户名</th><td data-label="用户名">${escHtml(u.username)}</td></tr>
-		<tr><th>邮箱</th><td data-label="邮箱">${escHtml(u.email || '—')}</td></tr>
-		<tr><th>角色</th><td data-label="角色">${isAdmin() ? '管理员' : '普通用户'}</td></tr>
+		<tr><th>邮箱</th><td data-label="邮箱">${escHtml(u.email || "—")}</td></tr>
+		<tr><th>角色</th><td data-label="角色">${isAdmin() ? "管理员" : "普通用户"}</td></tr>
 		<tr><th>注册时间</th><td data-label="注册时间">${formatTime(u.created_at)}</td></tr>
 		<tr><th>更新时间</th><td data-label="更新时间">${formatTime(u.updated_at)}</td></tr>
 	</table>`;
@@ -353,10 +442,10 @@ async function renderDashboard() {
    Change Password
    ================================================================ */
 function showChangePasswordModal() {
-	const modalId = 'modal-container';
+	const modalId = "modal-container";
 	let container = document.getElementById(modalId);
 	if (!container) {
-		container = document.createElement('div');
+		container = document.createElement("div");
 		container.id = modalId;
 		$main.appendChild(container);
 	}
@@ -386,48 +475,50 @@ function showChangePasswordModal() {
 		</div>
 	</div>`;
 
-	document.getElementById('change-password-form').addEventListener('submit', async (e) => {
-		e.preventDefault();
-		const btn = document.getElementById('change-pwd-btn');
-		const fd = new FormData(e.target);
+	document
+		.getElementById("change-password-form")
+		.addEventListener("submit", async (e) => {
+			e.preventDefault();
+			const btn = document.getElementById("change-pwd-btn");
+			const fd = new FormData(e.target);
 
-		const newPwd = fd.get('new_password');
-		const confirmPwd = fd.get('confirm_password');
+			const newPwd = fd.get("new_password");
+			const confirmPwd = fd.get("confirm_password");
 
-		if (newPwd !== confirmPwd) {
-			showToast('两次输入的新密码不一致', 'error');
-			return;
-		}
+			if (newPwd !== confirmPwd) {
+				showToast("两次输入的新密码不一致", "error");
+				return;
+			}
 
-		btn.disabled = true;
-		btn.textContent = '修改中…';
+			btn.disabled = true;
+			btn.textContent = "修改中…";
 
-		try {
-			await apiPost('/api/auth/change-password', {
-				old_password: fd.get('old_password'),
-				new_password: newPwd,
-			});
-			showToast('密码修改成功', 'success');
-			closeChangePassword();
-		} catch (err) {
-			showToast(err.msg || '修改失败', 'error');
-		} finally {
-			btn.disabled = false;
-			btn.textContent = '确认修改';
-		}
-	});
+			try {
+				await apiPost("/api/auth/change-password", {
+					old_password: fd.get("old_password"),
+					new_password: newPwd,
+				});
+				showToast("密码修改成功", "success");
+				closeChangePassword();
+			} catch (err) {
+				showToast(err.msg || "修改失败", "error");
+			} finally {
+				btn.disabled = false;
+				btn.textContent = "确认修改";
+			}
+		});
 }
 
 function closeChangePassword() {
-	const container = document.getElementById('modal-container');
-	if (container) container.innerHTML = '';
+	const container = document.getElementById("modal-container");
+	if (container) container.innerHTML = "";
 }
 
 /* ================================================================
    Admin - Users
    ================================================================ */
 async function renderAdminUsers() {
-	$main.className = '';
+	$main.className = "";
 	$main.innerHTML = `
 	<div class="card">
 		<div class="card-header">
@@ -449,87 +540,128 @@ async function renderAdminUsers() {
 
 async function loadRegistrationSetting() {
 	try {
-		const d = await apiGet('/api/admin/settings/registration');
-		document.getElementById('reg-toggle').checked = d.data.registration_enabled;
+		const d = await apiGet("/api/admin/settings/registration");
+		document.getElementById("reg-toggle").checked = d.data.registration_enabled;
 	} catch (err) {
 		// 获取失败时保持默认开启状态
 	}
 }
 
 async function toggleRegistration() {
-	const enabled = document.getElementById('reg-toggle').checked;
+	const enabled = document.getElementById("reg-toggle").checked;
 	try {
-		await apiPut('/api/admin/settings/registration', { registration_enabled: enabled });
-		showToast(enabled ? '已开启新用户注册' : '已关闭新用户注册', 'success');
+		await apiPut("/api/admin/settings/registration", {
+			registration_enabled: enabled,
+		});
+		showToast(enabled ? "已开启新用户注册" : "已关闭新用户注册", "success");
 	} catch (err) {
-		showToast(err.msg || '操作失败', 'error');
+		showToast(err.msg || "操作失败", "error");
 		// 恢复开关状态
-		document.getElementById('reg-toggle').checked = !enabled;
+		document.getElementById("reg-toggle").checked = !enabled;
 	}
 }
 
-
 async function loadUsers(page) {
 	try {
-		const d = await apiGet('/api/admin/users?page=' + page + '&page_size=15');
+		const d = await apiGet("/api/admin/users?page=" + page + "&page_size=15");
 		const items = d.data.items;
 		const total = d.data.total;
-		const ps    = d.data.page_size;
+		const ps = d.data.page_size;
 
 		if (items.length === 0) {
-			document.getElementById('admin-users-table').innerHTML =
+			document.getElementById("admin-users-table").innerHTML =
 				'<div class="empty"><p>暂无用户</p></div>';
-			document.getElementById('admin-users-pager').innerHTML = '';
+			document.getElementById("admin-users-pager").innerHTML = "";
 			return;
 		}
 
-		let html = '<div class="table-wrap"><table><thead><tr>' +
-			'<th>用户名</th><th>邮箱</th><th>角色</th><th>注册时间</th><th>操作</th>' +
-			'</tr></thead><tbody>';
+		let html =
+			'<div class="table-wrap"><table><thead><tr>' +
+			"<th>用户名</th><th>邮箱</th><th>角色</th><th>注册时间</th><th>操作</th>" +
+			"</tr></thead><tbody>";
 		for (const u of items) {
 			const isSelf = u.id === currentUser.id;
-			html += '<tr>' +
-				'<td data-label="用户名"><strong>' + escHtml(u.username) + '</strong></td>' +
-				'<td data-label="邮箱">' + escHtml(u.email || '—') + '</td>' +
-				'<td data-label="角色">' + (u.role === 'admin' ? '<span class="role-badge admin">管理员</span>' : '<span class="role-badge">用户</span>') + '</td>' +
-				'<td data-label="注册时间">' + formatTime(u.created_at) + '</td>' +
-				'<td data-label="操作" class="actions">' + renderUserActions(u, isSelf) + '</td>' +
-				'</tr>';
+			html +=
+				"<tr>" +
+				'<td data-label="用户名"><strong>' +
+				escHtml(u.username) +
+				"</strong></td>" +
+				'<td data-label="邮箱">' +
+				escHtml(u.email || "—") +
+				"</td>" +
+				'<td data-label="角色">' +
+				(u.role === "admin"
+					? '<span class="role-badge admin">管理员</span>'
+					: '<span class="role-badge">用户</span>') +
+				"</td>" +
+				'<td data-label="注册时间">' +
+				formatTime(u.created_at) +
+				"</td>" +
+				'<td data-label="操作" class="actions">' +
+				renderUserActions(u, isSelf) +
+				"</td>" +
+				"</tr>";
 		}
-		html += '</tbody></table></div>';
-		document.getElementById('admin-users-table').innerHTML = html;
+		html += "</tbody></table></div>";
+		document.getElementById("admin-users-table").innerHTML = html;
 
 		// pagination
 		const totalPages = Math.ceil(total / ps);
 		let pagerHtml = '<div class="pagination">';
 		if (page > 1) {
-			pagerHtml += '<button class="btn btn-outline btn-sm" onclick="loadUsers(' + (page - 1) + ')">上一页</button>';
+			pagerHtml +=
+				'<button class="btn btn-outline btn-sm" onclick="loadUsers(' +
+				(page - 1) +
+				')">上一页</button>';
 		}
-		pagerHtml += '<span>第 ' + page + ' / ' + totalPages + ' 页（共 ' + total + ' 条）</span>';
+		pagerHtml +=
+			"<span>第 " +
+			page +
+			" / " +
+			totalPages +
+			" 页（共 " +
+			total +
+			" 条）</span>";
 		if (page < totalPages) {
-			pagerHtml += '<button class="btn btn-outline btn-sm" onclick="loadUsers(' + (page + 1) + ')">下一页</button>';
+			pagerHtml +=
+				'<button class="btn btn-outline btn-sm" onclick="loadUsers(' +
+				(page + 1) +
+				')">下一页</button>';
 		}
-		pagerHtml += '</div>';
-		document.getElementById('admin-users-pager').innerHTML = pagerHtml;
+		pagerHtml += "</div>";
+		document.getElementById("admin-users-pager").innerHTML = pagerHtml;
 	} catch (err) {
-		showToast(err.msg || '获取用户列表失败', 'error');
+		showToast(err.msg || "获取用户列表失败", "error");
 	}
 }
 
 function renderUserActions(u, isSelf) {
-	if (isSelf) return '<span style="color:var(--c-text-sub);font-size:12px">当前用户</span>';
-	if (u.role === 'user') {
-		return '<button class="btn btn-outline btn-sm" onclick="showAdminChangePwdModal(\'' + u.id + '\',\'' + escJs(u.username) + '\')">修改密码</button>' +
-			'<button class="btn btn-outline btn-sm" onclick="promoteUser(\'' + u.id + '\')">提升为管理员</button>';
+	if (isSelf)
+		return '<span style="color:var(--c-text-sub);font-size:12px">当前用户</span>';
+	if (u.role === "user") {
+		return (
+			'<button class="btn btn-outline btn-sm" onclick="showAdminChangePwdModal(\'' +
+			u.id +
+			"','" +
+			escJs(u.username) +
+			"')\">修改密码</button>" +
+			'<button class="btn btn-outline btn-sm" onclick="promoteUser(\'' +
+			u.id +
+			"')\">提升为管理员</button>"
+		);
 	}
-	return '<button class="btn btn-outline btn-sm" onclick="demoteUser(\'' + u.id + '\')">降级</button>';
+	return (
+		'<button class="btn btn-outline btn-sm" onclick="demoteUser(\'' +
+		u.id +
+		"')\">降级</button>"
+	);
 }
 
 function showAdminChangePwdModal(userId, username) {
-	const modalId = 'modal-container';
+	const modalId = "modal-container";
 	let container = document.getElementById(modalId);
 	if (!container) {
-		container = document.createElement('div');
+		container = document.createElement("div");
 		container.id = modalId;
 		$main.appendChild(container);
 	}
@@ -556,60 +688,62 @@ function showAdminChangePwdModal(userId, username) {
 		</div>
 	</div>`;
 
-	document.getElementById('admin-change-pwd-form').addEventListener('submit', async (e) => {
-		e.preventDefault();
-		const btn = document.getElementById('admin-change-pwd-btn');
-		const fd = new FormData(e.target);
-		const newPwd = fd.get('new_password');
-		const confirmPwd = fd.get('confirm_password');
+	document
+		.getElementById("admin-change-pwd-form")
+		.addEventListener("submit", async (e) => {
+			e.preventDefault();
+			const btn = document.getElementById("admin-change-pwd-btn");
+			const fd = new FormData(e.target);
+			const newPwd = fd.get("new_password");
+			const confirmPwd = fd.get("confirm_password");
 
-		if (newPwd !== confirmPwd) {
-			showToast('两次输入的新密码不一致', 'error');
-			return;
-		}
+			if (newPwd !== confirmPwd) {
+				showToast("两次输入的新密码不一致", "error");
+				return;
+			}
 
-		btn.disabled = true;
-		btn.textContent = '修改中…';
+			btn.disabled = true;
+			btn.textContent = "修改中…";
 
-		try {
-			await apiPut('/api/admin/users/' + userId + '/change-password', {
-				new_password: newPwd,
-			});
-			showToast('密码已修改', 'success');
-			closeAdminChangePwd();
-		} catch (err) {
-			showToast(err.msg || '修改失败', 'error');
-		} finally {
-			btn.disabled = false;
-			btn.textContent = '确认修改';
-		}
-	});
+			try {
+				await apiPut("/api/admin/users/" + userId + "/change-password", {
+					new_password: newPwd,
+				});
+				showToast("密码已修改", "success");
+				closeAdminChangePwd();
+			} catch (err) {
+				showToast(err.msg || "修改失败", "error");
+			} finally {
+				btn.disabled = false;
+				btn.textContent = "确认修改";
+			}
+		});
 }
 
 function closeAdminChangePwd() {
-	const container = document.getElementById('modal-container');
-	if (container) container.innerHTML = '';
+	const container = document.getElementById("modal-container");
+	if (container) container.innerHTML = "";
 }
 
 async function promoteUser(userId) {
-	if (!confirm('确定将该用户提升为管理员？')) return;
+	if (!(await showConfirm("确定将该用户提升为管理员？"))) return;
 	try {
-		await apiPut('/api/admin/users/' + userId + '/promote');
-		showToast('已提升为管理员', 'success');
+		await apiPut("/api/admin/users/" + userId + "/promote");
+		showToast("已提升为管理员", "success");
 		await loadUsers(1);
 	} catch (err) {
-		showToast(err.msg || '操作失败', 'error');
+		showToast(err.msg || "操作失败", "error");
 	}
 }
 
 async function demoteUser(userId) {
-	if (!confirm('确定将该管理员降级为普通用户？')) return;
+	if (!(await showConfirm("确定将该管理员降级为普通用户？"))) return;
 	try {
-		await apiPut('/api/admin/users/' + userId + '/demote');
-		showToast('已降级为普通用户', 'success');
+		await apiPut("/api/admin/users/" + userId + "/demote");
+		showToast("已降级为普通用户", "success");
 		await loadUsers(1);
 	} catch (err) {
-		showToast(err.msg || '操作失败', 'error');
+		showToast(err.msg || "操作失败", "error");
 	}
 }
 
@@ -617,7 +751,7 @@ async function demoteUser(userId) {
    Admin - Apps
    ================================================================ */
 async function renderAdminApps() {
-	$main.className = '';
+	$main.className = "";
 	$main.innerHTML = `
 	<div class="card">
 		<div class="card-header">
@@ -635,54 +769,100 @@ let appPage = 1;
 async function loadApps(page) {
 	appPage = page;
 	try {
-		const d = await apiGet('/api/admin/apps?page=' + page + '&page_size=15');
+		const d = await apiGet("/api/admin/apps?page=" + page + "&page_size=15");
 		const items = d.data.items;
 		const total = d.data.total;
-		const ps    = d.data.page_size;
+		const ps = d.data.page_size;
 
 		if (items.length === 0) {
-			document.getElementById('admin-apps-table').innerHTML =
+			document.getElementById("admin-apps-table").innerHTML =
 				'<div class="empty"><p>暂无应用，点击上方按钮创建</p></div>';
-			document.getElementById('admin-apps-pager').innerHTML = '';
+			document.getElementById("admin-apps-pager").innerHTML = "";
 			return;
 		}
 
-		let html = '<div class="table-wrap"><table><thead><tr>' +
-			'<th>名称</th><th>描述</th><th>Client ID</th><th>回调地址</th><th>创建时间</th><th>操作</th>' +
-			'</tr></thead><tbody>';
+		let html =
+			'<div class="table-wrap"><table><thead><tr>' +
+			"<th>名称</th><th>描述</th><th>Client ID</th><th>回调地址</th><th>创建时间</th><th>操作</th>" +
+			"</tr></thead><tbody>";
 		for (const a of items) {
-			html += '<tr>' +
-				'<td data-label="名称"><strong>' + escHtml(a.name) + '</strong></td>' +
-				'<td data-label="描述"><span style="color:var(--c-text-sub);font-size:12px">' + escHtml(a.description || '—') + '</span></td>' +
-				'<td data-label="Client ID"><code>' + escHtml(a.client_id) + '</code></td>' +
-				'<td data-label="回调地址"><div class="tag-uris">' + (a.redirect_uris || []).map(u => '<span class="tag-uri" title="' + escHtml(u) + '">' + escHtml(u) + '</span>').join('') + '</div></td>' +
-				'<td data-label="创建时间">' + formatTime(a.created_at) + '</td>' +
+			html +=
+				"<tr>" +
+				'<td data-label="名称"><strong>' +
+				escHtml(a.name) +
+				"</strong></td>" +
+				'<td data-label="描述"><span style="color:var(--c-text-sub);font-size:12px">' +
+				escHtml(a.description || "—") +
+				"</span></td>" +
+				'<td data-label="Client ID"><code>' +
+				escHtml(a.client_id) +
+				"</code></td>" +
+				'<td data-label="回调地址"><div class="tag-uris">' +
+				(a.redirect_uris || [])
+					.map(
+						(u) =>
+							'<span class="tag-uri" title="' +
+							escHtml(u) +
+							'">' +
+							escHtml(u) +
+							"</span>",
+					)
+					.join("") +
+				"</div></td>" +
+				'<td data-label="创建时间">' +
+				formatTime(a.created_at) +
+				"</td>" +
 				'<td data-label="操作" class="actions">' +
-					'<button class="btn btn-outline btn-sm" onclick="showEditAppModal(\'' + a.id + '\')">编辑</button>' +
-					'<button class="btn btn-outline btn-sm" onclick="showSecretModal(\'' + a.id + '\')">密钥</button>' +
-					'<button class="btn btn-outline btn-sm" onclick="resetSecret(\'' + a.id + '\')">重置密钥</button>' +
-					'<button class="btn btn-danger btn-sm" onclick="deleteApp(\'' + a.id + '\',\'' + escJs(a.name) + '\')">删除</button>' +
-				'</td>' +
-				'</tr>';
+				'<button class="btn btn-outline btn-sm" onclick="showEditAppModal(\'' +
+				a.id +
+				"')\">编辑</button>" +
+				'<button class="btn btn-outline btn-sm" onclick="showSecretModal(\'' +
+				a.id +
+				"')\">密钥</button>" +
+				'<button class="btn btn-outline btn-sm" onclick="resetSecret(\'' +
+				a.id +
+				"')\">重置密钥</button>" +
+				'<button class="btn btn-danger btn-sm" onclick="deleteApp(\'' +
+				a.id +
+				"','" +
+				escJs(a.name) +
+				"')\">删除</button>" +
+				"</td>" +
+				"</tr>";
 		}
-		html += '</tbody></table></div>';
-		document.getElementById('admin-apps-table').innerHTML = html;
+		html += "</tbody></table></div>";
+		document.getElementById("admin-apps-table").innerHTML = html;
 
 		const totalPages = Math.ceil(total / ps);
 		let pagerHtml = '<div class="pagination">';
-		if (page > 1) pagerHtml += '<button class="btn btn-outline btn-sm" onclick="loadApps(' + (page - 1) + ')">上一页</button>';
-		pagerHtml += '<span>第 ' + page + ' / ' + totalPages + ' 页（共 ' + total + ' 条）</span>';
-		if (page < totalPages) pagerHtml += '<button class="btn btn-outline btn-sm" onclick="loadApps(' + (page + 1) + ')">下一页</button>';
-		pagerHtml += '</div>';
-		document.getElementById('admin-apps-pager').innerHTML = pagerHtml;
+		if (page > 1)
+			pagerHtml +=
+				'<button class="btn btn-outline btn-sm" onclick="loadApps(' +
+				(page - 1) +
+				')">上一页</button>';
+		pagerHtml +=
+			"<span>第 " +
+			page +
+			" / " +
+			totalPages +
+			" 页（共 " +
+			total +
+			" 条）</span>";
+		if (page < totalPages)
+			pagerHtml +=
+				'<button class="btn btn-outline btn-sm" onclick="loadApps(' +
+				(page + 1) +
+				')">下一页</button>';
+		pagerHtml += "</div>";
+		document.getElementById("admin-apps-pager").innerHTML = pagerHtml;
 	} catch (err) {
-		showToast(err.msg || '获取应用列表失败', 'error');
+		showToast(err.msg || "获取应用列表失败", "error");
 	}
 }
 
 /* ----- Create App Modal ----- */
 function showCreateAppModal() {
-	document.getElementById('modal-container').innerHTML = `
+	document.getElementById("modal-container").innerHTML = `
 	<div class="modal-overlay" onclick="if(event.target===this)closeModal()">
 		<div class="modal">
 			<h3>创建应用</h3>
@@ -708,31 +888,39 @@ function showCreateAppModal() {
 		</div>
 	</div>`;
 
-	document.getElementById('create-app-form').addEventListener('submit', async (e) => {
-		e.preventDefault();
-		const btn = document.getElementById('create-app-btn');
-		btn.disabled = true; btn.textContent = '创建中…';
-		const fd = new FormData(e.target);
-		const uris = fd.get('redirect_uris').split('\n').map(s => s.trim()).filter(Boolean);
-		try {
-			const d = await apiPost('/api/admin/apps', {
-				name: fd.get('name'),
-				description: fd.get('description') || '',
-				redirect_uris: uris,
-			});
-			showSecretCreated(d.data); // show client_secret immediately
-			closeModal();
-			await loadApps(appPage);
-		} catch (err) {
-			showToast(err.msg || '创建失败', 'error');
-		} finally {
-			btn.disabled = false; btn.textContent = '创建';
-		}
-	});
+	document
+		.getElementById("create-app-form")
+		.addEventListener("submit", async (e) => {
+			e.preventDefault();
+			const btn = document.getElementById("create-app-btn");
+			btn.disabled = true;
+			btn.textContent = "创建中…";
+			const fd = new FormData(e.target);
+			const uris = fd
+				.get("redirect_uris")
+				.split("\n")
+				.map((s) => s.trim())
+				.filter(Boolean);
+			try {
+				const d = await apiPost("/api/admin/apps", {
+					name: fd.get("name"),
+					description: fd.get("description") || "",
+					redirect_uris: uris,
+				});
+				showSecretCreated(d.data); // show client_secret immediately
+				closeModal();
+				await loadApps(appPage);
+			} catch (err) {
+				showToast(err.msg || "创建失败", "error");
+			} finally {
+				btn.disabled = false;
+				btn.textContent = "创建";
+			}
+		});
 }
 
 function showSecretCreated(app) {
-	document.getElementById('modal-container').innerHTML = `
+	document.getElementById("modal-container").innerHTML = `
 	<div class="modal-overlay" onclick="if(event.target===this)closeModal()">
 		<div class="modal">
 			<h3>应用创建成功</h3>
@@ -755,10 +943,10 @@ function showSecretCreated(app) {
 /* ----- Edit App Modal ----- */
 async function showEditAppModal(appId) {
 	try {
-		const d = await apiGet('/api/admin/apps/' + appId);
+		const d = await apiGet("/api/admin/apps/" + appId);
 		const a = d.data;
 
-		document.getElementById('modal-container').innerHTML = `
+		document.getElementById("modal-container").innerHTML = `
 		<div class="modal-overlay" onclick="if(event.target===this)closeModal()">
 			<div class="modal">
 				<h3>编辑应用</h3>
@@ -769,11 +957,11 @@ async function showEditAppModal(appId) {
 					</div>
 					<div class="form-group">
 						<label>描述</label>
-						<textarea name="description">${escHtml(a.description || '')}</textarea>
+						<textarea name="description">${escHtml(a.description || "")}</textarea>
 					</div>
 					<div class="form-group">
 						<label>回调地址</label>
-						<textarea name="redirect_uris" rows="3">${(a.redirect_uris || []).join('\n')}</textarea>
+						<textarea name="redirect_uris" rows="3">${(a.redirect_uris || []).join("\n")}</textarea>
 						<p class="hint">每行一个 URI</p>
 					</div>
 					<div class="modal-actions">
@@ -784,44 +972,53 @@ async function showEditAppModal(appId) {
 			</div>
 		</div>`;
 
-		document.getElementById('edit-app-form').addEventListener('submit', async (e) => {
-			e.preventDefault();
-			const btn = document.getElementById('edit-app-btn');
-			btn.disabled = true; btn.textContent = '保存中…';
-			const fd = new FormData(e.target);
-			const name = fd.get('name') || undefined;
-			const desc = fd.get('description') || undefined;
-			const rawUris = fd.get('redirect_uris');
-			const uris = rawUris ? rawUris.split('\n').map(s => s.trim()).filter(Boolean) : undefined;
+		document
+			.getElementById("edit-app-form")
+			.addEventListener("submit", async (e) => {
+				e.preventDefault();
+				const btn = document.getElementById("edit-app-btn");
+				btn.disabled = true;
+				btn.textContent = "保存中…";
+				const fd = new FormData(e.target);
+				const name = fd.get("name") || undefined;
+				const desc = fd.get("description") || undefined;
+				const rawUris = fd.get("redirect_uris");
+				const uris = rawUris
+					? rawUris
+							.split("\n")
+							.map((s) => s.trim())
+							.filter(Boolean)
+					: undefined;
 
-			const body = {};
-			if (name !== undefined) body.name = name;
-			if (desc !== undefined) body.description = desc;
-			if (uris !== undefined) body.redirect_uris = uris;
+				const body = {};
+				if (name !== undefined) body.name = name;
+				if (desc !== undefined) body.description = desc;
+				if (uris !== undefined) body.redirect_uris = uris;
 
-			try {
-				await apiPut('/api/admin/apps/' + appId, body);
-				showToast('应用已更新', 'success');
-				closeModal();
-				await loadApps(appPage);
-			} catch (err) {
-				showToast(err.msg || '更新失败', 'error');
-			} finally {
-				btn.disabled = false; btn.textContent = '保存';
-			}
-		});
+				try {
+					await apiPut("/api/admin/apps/" + appId, body);
+					showToast("应用已更新", "success");
+					closeModal();
+					await loadApps(appPage);
+				} catch (err) {
+					showToast(err.msg || "更新失败", "error");
+				} finally {
+					btn.disabled = false;
+					btn.textContent = "保存";
+				}
+			});
 	} catch (err) {
-		showToast(err.msg || '获取应用信息失败', 'error');
+		showToast(err.msg || "获取应用信息失败", "error");
 	}
 }
 
 /* ----- Secret Modal ----- */
 async function showSecretModal(appId) {
 	try {
-		const d = await apiGet('/api/admin/apps/' + appId);
+		const d = await apiGet("/api/admin/apps/" + appId);
 		const a = d.data;
 
-		document.getElementById('modal-container').innerHTML = `
+		document.getElementById("modal-container").innerHTML = `
 		<div class="modal-overlay" onclick="if(event.target===this)closeModal()">
 			<div class="modal">
 				<h3>应用密钥 — ${escHtml(a.name)}</h3>
@@ -839,19 +1036,22 @@ async function showSecretModal(appId) {
 			</div>
 		</div>`;
 	} catch (err) {
-		showToast(err.msg || '获取密钥失败', 'error');
+		showToast(err.msg || "获取密钥失败", "error");
 	}
 }
 
 /* ----- Reset Secret ----- */
 async function resetSecret(appId) {
-	if (!confirm('重置后旧密钥将立即失效，确定继续？')) return;
+	if (
+		!(await showConfirm("重置后旧密钥将立即失效，确定继续？", { danger: true }))
+	)
+		return;
 	try {
-		const d = await apiPost('/api/admin/apps/' + appId + '/reset-secret');
+		const d = await apiPost("/api/admin/apps/" + appId + "/reset-secret");
 		const secret = d.data.client_secret;
 
 		// Show new secret modal
-		document.getElementById('modal-container').innerHTML = `
+		document.getElementById("modal-container").innerHTML = `
 		<div class="modal-overlay" onclick="if(event.target===this)closeModal()">
 			<div class="modal">
 				<h3>密钥已重置</h3>
@@ -866,52 +1066,79 @@ async function resetSecret(appId) {
 			</div>
 		</div>`;
 	} catch (err) {
-		showToast(err.msg || '重置失败', 'error');
+		showToast(err.msg || "重置失败", "error");
 	}
 }
 
 /* ----- Delete App ----- */
 async function deleteApp(appId, name) {
-	if (!confirm('确定删除应用 "' + name + '"？此操作不可撤销，将同时清理该应用下的所有元数据。')) return;
+	if (
+		!(await showConfirm(
+			'确定删除应用 "' +
+				name +
+				'"？此操作不可撤销，将同时清理该应用下的所有元数据。',
+			{ danger: true },
+		))
+	)
+		return;
 	try {
-		await apiDel('/api/admin/apps/' + appId);
-		showToast('应用已删除', 'success');
+		await apiDel("/api/admin/apps/" + appId);
+		showToast("应用已删除", "success");
 		await loadApps(appPage);
 	} catch (err) {
-		showToast(err.msg || '删除失败', 'error');
+		showToast(err.msg || "删除失败", "error");
 	}
 }
 
 /* ----- Close Modal ----- */
 function closeModal() {
-	document.getElementById('modal-container').innerHTML = '';
+	document.getElementById("modal-container").innerHTML = "";
 }
 
 /* ================================================================
    Utility
    ================================================================ */
 function escHtml(s) {
-	if (!s) return '';
-	return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+	if (!s) return "";
+	return String(s)
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;");
 }
 
 function escAttr(s) {
-	if (!s) return '';
-	return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	if (!s) return "";
+	return String(s)
+		.replace(/&/g, "&amp;")
+		.replace(/"/g, "&quot;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;");
 }
 
 function escJs(s) {
-	if (!s) return '';
-	return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+	if (!s) return "";
+	return String(s).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
 function formatTime(iso) {
-	if (!iso) return '—';
+	if (!iso) return "—";
 	try {
 		const d = new Date(iso);
-		const pad = (n) => String(n).padStart(2, '0');
-		return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
-			' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+		const pad = (n) => String(n).padStart(2, "0");
+		return (
+			d.getFullYear() +
+			"-" +
+			pad(d.getMonth() + 1) +
+			"-" +
+			pad(d.getDate()) +
+			" " +
+			pad(d.getHours()) +
+			":" +
+			pad(d.getMinutes()) +
+			":" +
+			pad(d.getSeconds())
+		);
 	} catch (_) {
 		return iso;
 	}
@@ -920,10 +1147,15 @@ function formatTime(iso) {
 /* ================================================================
    Init
    ================================================================ */
-window.addEventListener('hashchange', () => { closeDrawer(); doRoute(); });
+window.addEventListener("hashchange", () => {
+	closeDrawer();
+	doRoute();
+});
 
 // ESC key to close drawer
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+document.addEventListener("keydown", (e) => {
+	if (e.key === "Escape") closeDrawer();
+});
 
 (async function init() {
 	// Try auto-login via session cookie
