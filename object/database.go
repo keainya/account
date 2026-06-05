@@ -11,6 +11,7 @@ var Database *gorm.DB
 
 func init() {
 	os.MkdirAll("data", 0755)
+	os.MkdirAll("data/avatar", 0755)
 	db, err := gorm.Open(sqlite.Open("data/account.db"), &gorm.Config{})
 	if err != nil {
 		panic(err)

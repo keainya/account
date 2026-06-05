@@ -59,7 +59,11 @@ func InitRouter(webEmbed embed.FS) *gin.Engine {
 		auth.POST("/logout", service.Logout)
 		auth.POST("/change-password", service.AuthRequired(), service.ChangePassword)
 		auth.GET("/me", service.AuthRequired(), service.Me)
+		auth.POST("/avatar", service.AuthRequired(), service.UploadAvatar)
 	}
+
+	// ========== 头像文件 ==========
+	r.GET("/avatar/:filename", service.GetAvatar)
 
 	// ========== OAuth 2.0 API ==========
 	// authorize 内部会判断登录状态，不强制要求已登录

@@ -65,6 +65,85 @@ function showConfirm(message, opts) {
 }
 
 /* ================================================================
+   Avatar Upload
+   ================================================================ */
+function pickAvatar() {
+	const input = document.createElement("input");
+	input.type = "file";
+	input.accept = "image/jpeg,image/png,image/webp";
+	input.onchange = async () => {
+		if (!input.files || !input.files[0]) return;
+		try {
+			const blob = await cropAndCompress(input.files[0]);
+			await uploadAvatar(blob);
+		} catch (err) {
+			showToast(err.message || "头像上传失败", "error");
+		}
+	};
+	input.click();
+}
+
+function cropAndCompress(file) {
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		img.onload = () => {
+			const size = Math.min(img.width, img.height);
+			const sx = (img.width - size) / 2;
+			const sy = (img.height - size) / 2;
+
+			const canvas = document.createElement("canvas");
+			canvas.width = 200;
+			canvas.height = 200;
+			const ctx = canvas.getContext("2d");
+			ctx.drawImage(img, sx, sy, size, size, 0, 0, 200, 200);
+
+			canvas.toBlob(
+				(blob) => {
+					if (!blob) {
+						reject(new Error("图片处理失败"));
+						return;
+					}
+					if (blob.size <= 100 * 1024) {
+						resolve(blob);
+						return;
+					}
+					// 压缩到 100KB 以内
+					canvas.toBlob(
+						(blob2) => {
+							if (!blob2) {
+								reject(new Error("图片压缩失败"));
+								return;
+							}
+							resolve(blob2);
+						},
+						"image/jpeg",
+						0.6,
+					);
+				},
+				"image/jpeg",
+				0.85,
+			);
+		};
+		img.onerror = () => reject(new Error("无法读取图片文件"));
+		img.src = URL.createObjectURL(file);
+	});
+}
+
+async function uploadAvatar(blob) {
+	const fd = new FormData();
+	fd.append("avatar", blob, "avatar.jpg");
+	const d = await api("/api/auth/avatar", {
+		method: "POST",
+		body: fd,
+		headers: {}, // let browser set Content-Type with boundary
+	});
+	showToast("头像更新成功", "success");
+	// 刷新用户信息
+	await fetchMe();
+	await renderDashboard();
+}
+
+/* ================================================================
    API Client
    ================================================================ */
 async function api(url, opts) {
@@ -416,6 +495,8 @@ async function renderRegister() {
    Dashboard Page
    ================================================================ */
 async function renderDashboard() {
+	const u = currentUser;
+	const avatarUrl = u.avatar ? "/avatar/" + u.avatar : "";
 	$main.className = "";
 	$main.innerHTML = `
 	<div class="card">
@@ -423,10 +504,24 @@ async function renderDashboard() {
 			<h2>账户信息</h2>
 			<button class="btn btn-outline btn-sm" onclick="showChangePasswordModal()">修改密码</button>
 		</div>
+		<div class="avatar-section">
+			${
+				avatarUrl
+					? '<img class="avatar-img" src="' +
+						avatarUrl +
+						"?" +
+						Date.now() +
+						'" alt="头像" onclick="pickAvatar()">'
+					: '<div class="avatar-placeholder" onclick="pickAvatar()" title="上传头像">+</div>'
+			}
+			<div>
+				<div style="font-weight:600;margin-bottom:4px">${escHtml(u.username)}</div>
+				<span class="avatar-upload" onclick="pickAvatar()">更换头像</span>
+			</div>
+		</div>
 		<div id="dashboard-info"></div>
 	</div>`;
 
-	const u = currentUser;
 	document.getElementById("dashboard-info").innerHTML = `
 	<table>
 		<tr><th>用户 ID</th><td data-label="用户 ID"><code style="font-size:12px">${escHtml(u.id)}</code></td></tr>
