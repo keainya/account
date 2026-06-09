@@ -43,6 +43,12 @@ func InitRouter(webEmbed embed.FS) *gin.Engine {
 
 	// ---- Session 中间件 ----
 	store := cookie.NewStore([]byte("change-me-to-a-secure-random-key"))
+	store.Options(sessions.Options{
+		Path:     "/",
+		MaxAge:   0,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
 	r.Use(sessions.Sessions("account_session", store))
 
 	// ========== 公共路由 ==========
