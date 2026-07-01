@@ -125,6 +125,19 @@ func InitRouter(webEmbed embed.FS) *gin.Engine {
 		c.FileFromFS("favicon.ico", http.FS(webRoot))
 	})
 
+	// PWA 资源
+	r.GET("/manifest.json", func(c *gin.Context) {
+		c.FileFromFS("manifest.json", http.FS(webRoot))
+	})
+	r.GET("/sw.js", func(c *gin.Context) {
+		c.Header("Cache-Control", "no-cache")
+		c.FileFromFS("sw.js", http.FS(webRoot))
+	})
+	r.GET("/icon.svg", func(c *gin.Context) {
+		c.Header("Cache-Control", "public, max-age=86400")
+		c.FileFromFS("icon.svg", http.FS(webRoot))
+	})
+
 	// SPA fallback：未匹配的任何路径都返回 index.html
 	r.NoRoute(func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", indexHTML)
