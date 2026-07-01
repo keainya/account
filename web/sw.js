@@ -2,7 +2,7 @@
    Account - Service Worker (PWA)
    ================================================================ */
 
-const CACHE_NAME = "account-v1";
+const CACHE_NAME = "account-v2";
 const STATIC_ASSETS = [
   "/",
   "/css/style.css",
