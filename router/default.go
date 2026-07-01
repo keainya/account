@@ -134,7 +134,7 @@ func InitRouter(webEmbed embed.FS) *gin.Engine {
 		c.FileFromFS("sw.js", http.FS(webRoot))
 	})
 	r.GET("/icon.svg", func(c *gin.Context) {
-		c.Header("Cache-Control", "public, max-age=86400")
+		c.Header("Cache-Control", "public, max-age=3600, must-revalidate")
 		c.FileFromFS("icon.svg", http.FS(webRoot))
 	})
 
